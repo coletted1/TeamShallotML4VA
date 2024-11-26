@@ -20,7 +20,7 @@ def load_model():
         return None
 
 def main():
-    st.title("Enhanced Recipe Recommendation System")
+    st.title("Recipe Recommendation System")
 
     # Load data
     st.write("[INFO] Loading data...")
