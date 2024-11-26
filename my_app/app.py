@@ -1,96 +1,90 @@
 import streamlit as st
 from utils.data_loader import load_data
-from utils.recommendation import train_model, recommend_recipes
-import pandas as pd
+from utils.recommendation import recommend_recipes, train_model
+import pickle
+import os
 
-# Streamlit UI
-st.title("Recipe Recommendation System")
-st.write("Get personalized recipe recommendations based on your preferences!")
+# Save the trained model to a file
+def save_model(model, filename="models/svd_model.pkl"):
+    """Save the trained model to a pickle file."""
+    with open(filename, "wb") as file:
+        pickle.dump(model, file)
 
-# Step 1: Load Data
-st.header("Step 1: Load Data")
-if "data_loaded" not in st.session_state:
-    st.session_state["data_loaded"] = False
+@st.cache_resource
+def load_model():
+    """Load the pre-trained SVD model from a pickle file."""
+    if os.path.exists("models/svd_model.pkl"):
+        with open("models/svd_model.pkl", "rb") as file:
+            return pickle.load(file)
+    else:
+        return None
 
-if st.button("Load Data"):
+def main():
+    st.title("Enhanced Recipe Recommendation System")
+
+    # Load data
     st.write("[INFO] Loading data...")
-    try:
-        (
-            st.session_state["interactions_train"],
-            st.session_state["interactions_validation"],
-            st.session_state["interactions_test"],
-            st.session_state["recipes"],
-            st.session_state["ingr_map"],
-        ) = load_data()
-        st.session_state["data_loaded"] = True
-        st.success("[INFO] Data loaded successfully.")
-    except Exception as e:
-        st.error(f"[ERROR] Failed to load data: {e}")
-        raise
+    interactions_train, interactions_validation, interactions_test, raw_recipes = load_data()
 
-# Step 2: Train Model
-st.header("Step 2: Train Model")
-if "model_trained" not in st.session_state:
-    st.session_state["model_trained"] = False
+    # Check for existing model or retrain
+    st.sidebar.header("Model Options")
+    retrain_model = st.sidebar.checkbox("Retrain Model", value=False)
 
-if st.session_state["data_loaded"]:
-    if st.button("Train Model"):
-        st.write("[INFO] Starting model training...")
-        try:
-            st.session_state["model"] = train_model(
-                st.session_state["interactions_train"],
-                st.session_state["interactions_validation"],
-                st.session_state["interactions_test"],
-            )
-            st.session_state["model_trained"] = True
-            st.success("[INFO] Model training completed successfully.")
-        except Exception as e:
-            st.error(f"[ERROR] Model training failed: {e}")
-            raise
-else:
-    st.warning("Please load the data before training the model.")
+    if retrain_model:
+        st.write("[INFO] Retraining the model. This might take some time...")
+        model = train_model(interactions_train, interactions_validation, interactions_test)
+        save_model(model)
+        st.write("[INFO] Model retrained and saved successfully.")
+    else:
+        model = load_model()
+        if model is None:
+            st.error("[ERROR] No pre-trained model found. Please enable retraining.")
+            return
 
-# Step 3: User Preferences
-st.header("Step 3: Enter Your Preferences")
-if st.session_state["model_trained"]:
-    st.subheader("Calorie Level")
-    calorie_min = st.slider("Minimum Calorie Level", 0, 2, 1)
-    calorie_max = st.slider("Maximum Calorie Level", 0, 2, 2)
-    calorie_range = (calorie_min, calorie_max)
+    # User inputs for filters
+    with st.form("filters_form"):
+        calorie_range = st.slider("Select Calorie Range (Calories)", 0.0, 5000.0, (500.0, 2000.0))
+        total_fat_range = st.slider("Select Total Fat Range (grams)", 0.0, 200.0, (10.0, 50.0))
+        protein_range = st.slider("Select Protein Range (grams)", 0.0, 200.0, (10.0, 50.0))
+        carb_range = st.slider("Select Carbohydrate Range (grams)", 0.0, 200.0, (10.0, 50.0))
+        time_range = st.slider("Select Cooking Time Range (minutes)", 0, 240, (10, 60))
 
-    st.subheader("Ingredients")
-    ingredients_include = st.text_input(
-        "Ingredients to include (comma-separated)", "lettuce, tomato"
-    ).split(", ")
-    ingredients_exclude = st.text_input(
-        "Ingredients to exclude (comma-separated)", "chicken"
-    ).split(", ")
+        # Select tags
+        tags = st.multiselect(
+            "Select Tags",
+            options=['breakfast', 'dinner', 'lunch', 'snacks', 'desserts'],
+            default=[]
+        )
 
-    # Step 4: Generate Recommendations
-    st.header("Step 4: Generate Recommendations")
-    if st.button("Get Recommendations"):
+        # Ingredients to include/exclude
+        include_ingredients = st.text_input("Enter Ingredients to Include (comma-separated):")
+        exclude_ingredients = st.text_input("Enter Ingredients to Exclude (comma-separated):")
+
+        include_ingredients = [x.strip().lower() for x in include_ingredients.split(",") if x.strip()]
+        exclude_ingredients = [x.strip().lower() for x in exclude_ingredients.split(",") if x.strip()]
+
+        # Submit button for the form
+        submitted = st.form_submit_button("Get Recommendations")
+
+    # Generate recommendations only when the form is submitted
+    if submitted:
         st.write("[INFO] Generating recommendations...")
-        try:
-            recommended_recipes = recommend_recipes(
-                calorie_range=calorie_range,
-                ingredients_include=ingredients_include,
-                ingredients_exclude=ingredients_exclude,
-                recipes=st.session_state["recipes"],
-                ingr_map=st.session_state["ingr_map"],
-                model=st.session_state["model"],
-            )
-            if recommended_recipes.empty:
-                st.warning("No recommendations found for the given inputs.")
-            else:
-                st.success("Recommendations generated successfully!")
-                st.subheader("Recommended Recipes")
-                st.write(
-                    recommended_recipes[
-                        ["id", "calorie_level", "ingredient_tokens"]
-                    ]
-                )
-        except Exception as e:
-            st.error(f"[ERROR] Failed to generate recommendations: {e}")
-            raise
-else:
-    st.warning("Please train the model before entering preferences.")
+        recommended_recipes = recommend_recipes(
+            calorie_range, total_fat_range, protein_range, carb_range, time_range, tags,
+            include_ingredients, exclude_ingredients, raw_recipes, model
+        )
+
+        if recommended_recipes.empty:
+            st.warning("No recommendations found even after relaxing filters.")
+        else:
+            for _, row in recommended_recipes.iterrows():
+                recipe_url = f"https://www.food.com/recipe/{row['name'].replace(' ', '-').lower()}-{row['id']}"
+                st.markdown(f"### [{row['name']}]({recipe_url})")
+                st.write(f"**Description**: {row['description']}")
+                st.write(f"**Minutes to Cook**: {row['minutes']} minutes")
+                st.write(f"**Calories**: {row['calories']} kcal")
+                st.write(f"**Macros**: Total Fat: {row['total_fat_grams']} g, Protein: {row['protein_grams']} g, Carbs: {row['carbohydrates_grams']} g")
+                st.write("---")
+
+if __name__ == "__main__":
+    main()
