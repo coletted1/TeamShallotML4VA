@@ -18,7 +18,7 @@ Ensure you have the following installed:
 ## Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<your-username>/TeamShallotML4VA.git
+   git clone https://github.com/coletted1/TeamShallotML4VA.git
    ```
 2. Navigate to the project directory:
    ```bash
