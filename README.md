@@ -1,6 +1,5 @@
 # TeamShallotML4VA
 
-```markdown
 # Personalized Recipe Recommendation System
 
 This repository contains the implementation of a personalized recipe recommendation system. The system uses collaborative filtering and content-based filtering techniques to suggest recipes tailored to user preferences, including calorie ranges, macronutrient goals, dietary tags, and ingredient preferences.
