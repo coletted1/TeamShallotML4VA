@@ -68,4 +68,3 @@ For questions or feedback, please reach out to:
 ---
 
 Happy Cooking! 🍽️
-```
