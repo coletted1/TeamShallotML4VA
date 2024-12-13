@@ -24,10 +24,6 @@ Ensure you have the following installed:
    ```bash
    cd TeamShallotML4VA/my_app
    ```
-3. Install the required Python packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
 
 ## Running the Application
 1. Navigate to the `my_app` directory:
