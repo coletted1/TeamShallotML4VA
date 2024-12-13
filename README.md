@@ -52,19 +52,6 @@ Ensure you have the following installed:
 1. Enable the "Retrain Model" checkbox in the Streamlit sidebar.
 2. The system will retrain the recommendation model and save it as `svd_model.pkl`.
 
-## Project Structure
-```
-TeamShallotML4VA/
-├── data/                    # Contains datasets for recipes and user interactions
-├── models/                  # Directory for saved models (e.g., svd_model.pkl)
-├── my_app/                  # Main application directory
-│   ├── app.py               # Streamlit application
-│   ├── utils/               # Helper modules for data loading and recommendation
-│   │   ├── data_loader.py   # Handles dataset loading
-│   │   ├── recommendation.py # Recommendation logic and model training
-├── requirements.txt         # Python dependencies
-├── README.md                # Project documentation
-```
 
 ## Dataset Sources
 - **USDA FoodData Central**: Nutrition data for individual ingredients.
@@ -73,12 +60,10 @@ TeamShallotML4VA/
 ## Contribution
 Contributions are welcome! If you'd like to contribute, please fork the repository, make your changes, and submit a pull request.
 
-## License
-This project is licensed under the [MIT License](LICENSE).
 
 ## Contact
 For questions or feedback, please reach out to:
-- **Colette D'Costa** (Team Lead) - [Your Email/Contact Info]
+- **Colette D'Costa** - gce6pw@virginia.edu
 
 ---
 
